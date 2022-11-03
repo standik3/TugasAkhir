@@ -39,13 +39,13 @@
       type="submit"
       :label="tab" />
     </div>
-    
+
   </q-form>
 </template>
 <script>
 import { app, db, auth } from 'boot/firebase'
 import { useAuth } from '@vueuse/firebase/useAuth'
-import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword} from "firebase/auth";
+import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword , signOut } from "firebase/auth";
 import { useQuasar } from 'quasar'
 import { doc, setDoc, updateDoc } from "firebase/firestore";
 const {isAuthenticated, user} = useAuth(auth);
@@ -55,7 +55,7 @@ data() {
   return {
     formData:{
       name:'Tester',
-      phone: '081234567890',
+      phone: '123456789012',
       email:'tester@gmail.com',
       password:'123456',
     },isAuthenticated, user
@@ -103,6 +103,9 @@ methods: {
             // Signed in
             const userC = userCredential.user;
             setDoc(doc(db, "users", userC.uid), {
+              emailVerified: true,
+              photoURL: '',
+              disabled: false,
               displayName: tname,
               email: temail,
               emailVerified: false,
@@ -111,9 +114,15 @@ methods: {
               friendwith: [],
               group: [],
               reportedby: [],
-              phoneNumber: tphone
+              phoneNumber: tphone,
+              userUID:userC.uid
             }).then(() => {
                 console.log("Document successfully created!");
+                signOut(auth).then(() => {
+                  // Sign-out successful.
+                }).catch((error) => {
+                  // An error happened.
+                });
             })
             .catch((error) => {
                 // The document probably doesn't exist.

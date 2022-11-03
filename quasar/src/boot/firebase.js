@@ -25,9 +25,30 @@ export async function getCities(db) {
   const citiesCol = collection(db, 'users');
   const citySnapshot = await getDocs(citiesCol);
   const cityList = citySnapshot.docs.map(doc => doc.data());
+  // console.log("coba coba",cityList);
   return cityList;
 }
-
+export async function getGroup(db) {
+  const citiesCol = collection(db, 'group');
+  const citySnapshot = await getDocs(citiesCol);
+  const cityList = citySnapshot.docs.map(doc => doc.data());
+  // console.log("coba coba",cityList);
+  return cityList;
+}
+export async function getFriend(db) {
+  const citiesCol = collection(db, 'users');
+  const citySnapshot = await getDocs(citiesCol);
+  const cityList = citySnapshot.docs.map(doc => doc.data());
+  // console.log("coba coba",cityList);
+  return cityList;
+}
+export async function getRuleBot(db) {
+  const citiesCol = collection(db, 'rules');
+  const citySnapshot = await getDocs(citiesCol);
+  const cityList = citySnapshot.docs.map(doc => doc.data());
+  // console.log("coba coba",cityList);
+  return cityList;
+}
 // "async" is optional;
 // more info on params: https://v2.quasar.dev/quasar-cli/boot-files
 export default boot(async (/* { app, router, ... } */) => {
