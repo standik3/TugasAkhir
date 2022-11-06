@@ -63,6 +63,7 @@
                 {{ users.online ? 'Online' : 'Offline' }}</q-badge></q-item-label>
             </q-item-section>
             <q-btn @click="goChat(users.userUID)">chat</q-btn>
+            <q-btn @click="goReport(users.userUID)">report</q-btn>
           </q-item>
       </q-list>
       </q-page>
@@ -102,6 +103,43 @@
       // ChatActiveDIV,
     },
     methods: {
+      async goReport(uidreport){
+        await getCities(db).then((response)=>{
+          var tempreport = [];
+          var sudahreport = false;
+          response.forEach(element => {
+            if(element.userUID == uidreport){
+              tempreport = element.reportedby
+            }
+          });
+          tempreport.forEach(element=>{
+            if(element==user.value.uid){
+              sudahreport=true;
+            }
+          })
+          if(sudahreport){
+            this.triggerNegative("ANDA SUDAH PERNAH REPORT")
+          }else{
+            tempreport.push(user.value.uid);
+            let washingtonRef = doc(db, "users", uidreport);
+            updateDoc(washingtonRef, {
+              reportedby: tempreport
+            }).then(() => {
+                console.log("REPORTED user successfully updated!");
+            })
+            .catch((error) => {
+                // The document probably doesn't exist.
+                console.error("Error updating document: ", error);
+            });
+            this.triggerPositive("BERHASIL REPORT")
+          }
+
+        }).catch((error)=>{
+          console.log(error);
+        });
+
+        this.getData();
+      },
       goBack(){
         this.isChatted = false;
       },

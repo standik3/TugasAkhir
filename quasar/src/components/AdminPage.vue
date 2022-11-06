@@ -12,6 +12,7 @@
                     <th>EMAIL</th>
                     <th>EMAIL VERIFIED</th>
                     <th>STATUS</th>
+                    <th>REPORTED</th>
                     <th>ACTION</th>
                   </tr>
                   <tr v-for="users in this.dataUser" :key="users.id">
@@ -20,6 +21,7 @@
                       <th>{{ users.emailVerified }}</th>
                       <th><q-badge :color="users.disabled ? 'red-4' : 'light-green-5'">
                           {{ users.disabled ? 'BLOCKED' : '' }}</q-badge></th>
+                      <th>{{users.reportedby.length != 0  ?  users.reportedby.length + " kali" : 'NO REPORT' }} </th>
                       <th><q-btn v-if="users.disabled" @click="unblock(users.userUID)"> UNBLOCK</q-btn><q-btn v-if="!users.disabled" @click="block(users.userUID)"> BLOCK</q-btn></th>
                   </tr>
                 </table>

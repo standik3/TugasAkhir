@@ -54,13 +54,26 @@
             var substr2 = substr1 +  8;
             var autogenerate = user.value.uid.substring(substr1,substr2);
             var isipesan = this.formData.message;
-
+            var temprule = [];
+            temprule=this.dataRule;
+            var temprespon = "Maaf,Bisa ulangi lagi ?"
+            temprule.forEach(element=>{
+              element.trigger.forEach(trigerelement=>{
+                if(isipesan == trigerelement){
+                  if(element.respon.length<=1){
+                    temprespon = element.respon[0]
+                  }else{
+                    temprespon = element.respon[Math.floor(Math.random() * (element.respon.length - 1 + 1))]
+                  }
+                }
+              })
+            })
             if(isipesan.trim()){
               setDoc(doc(db, "chatbots", autogenerate), {
                 pesan:isipesan,
                 date: new Date(),
                 sender:user.value.uid,
-                respon:'apa'
+                respon:temprespon
               }).then(() => {
                 console.log("BERHASIL CHAT");
               })
@@ -79,10 +92,6 @@
           var temprule = []
           response.forEach(element=>{
             temprule.push(element)
-          })
-          temprule.forEach(element=>{
-            var temptriger=[];
-            
           })
           this.dataRule = temprule
         })
