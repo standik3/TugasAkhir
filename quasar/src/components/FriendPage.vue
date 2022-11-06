@@ -1,6 +1,30 @@
 <template>
   <q-page class="full-width">
-      <q-form @submit="addFriend">
+    <q-page v-if="isChatted">
+      <q-btn @click="goBack" label="<- BACK" />
+      CHAT WITH {{userchatwith}}
+      <div class="q-pa-md row justify-center">
+        <div style="width: 100%; max-width: 400px">
+          <q-chat-message
+            v-for="chat in dataChat" :key="chat.id"
+              :name="chat.sender === user.uid  ? user.email : userchatwith"
+              :text="[chat.pesan]"
+              :sent="chat.sender === user.uid"
+           />
+        </div>
+      </div>
+      <q-footer>
+          <q-form @submit="sendMessage">
+            <q-toolbar class="bg-grey-3 text-black row">
+            <q-btn round flat icon="insert_emoticon" class="q-mr-sm" />
+            <q-input rounded outlined dense class="WAL__field col-grow q-mr-sm" bg-color="white" v-model="formData.message" placeholder="Type a message" />
+            <q-btn round flat icon="send" type="submit"/>
+          </q-toolbar>
+          </q-form>
+        </q-footer>
+    </q-page>
+      <q-page v-else>
+        <q-form @submit="addFriend">
         <q-input
           outlined
           class="q-mb-md"
@@ -40,7 +64,8 @@
             </q-item-section>
             <q-btn @click="goChat(users.userUID)">chat</q-btn>
           </q-item>
-        </q-list>
+      </q-list>
+      </q-page>
   </q-page>
 </template>
   <script>
@@ -48,7 +73,8 @@
   import { doc, setDoc, updateDoc } from "firebase/firestore";
   import { useQuasar } from 'quasar'
   import { getAuth } from "firebase/auth";
-  import { app, db , getFriend,getCities } from 'boot/firebase'
+  import { app, db , getFriend,getCities,getChat } from 'boot/firebase'
+  // import ChatActiveDIV from 'src/components/ChatActive.vue';
   const { user } = useAuth(getAuth(app));
   export default ({
     props:[
@@ -63,14 +89,60 @@
           password:'',
           emailadd:'',
           phoneadd:'',
-          grupcode:''
+          grupcode:'',
+          message:''
         },
-        dataFriend: this.passingData
+        dataFriend: this.passingData,
+        isChatted:false,dataChat:undefined,
+        uidchatwith:undefined,user,
+        userchatwith:undefined
       }
     },
+    components:{
+      // ChatActiveDIV,
+    },
     methods: {
-      goChat(uid){
-        console.log("CHAT with :",uid);
+      goBack(){
+        this.isChatted = false;
+      },
+      async goChat(uidchat){
+        this.isChatted = true;
+        this.uidchatwith = uidchat;
+        await getCities(db).then((response)=>{
+            response.forEach(element => {
+              if(element.userUID == this.uidchatwith){
+                this.userchatwith = element.email
+              }
+            });
+          }).catch((error)=>{
+            console.log(error);
+          });
+        this.getData();
+      },
+      sendMessage(){
+        try {
+            var substr1 = Math.floor(Math.random() * (21 - 1 + 1)) + 1;
+            var substr2 = substr1 +  6;
+            var autogenerate = user.value.uid.substring(substr1,substr2) + this.uidchatwith.substring(substr1,substr2);
+            var isipesan = this.formData.message;
+            if(isipesan.trim()){
+              setDoc(doc(db, "chats", autogenerate), {
+                pesan:isipesan,
+                date: new Date(),
+                sender:user.value.uid,
+                receiver: this.uidchatwith
+              }).then(() => {
+                console.log("BERHASIL CHAT");
+              })
+              .catch((error) => {
+                console.log(error);
+              });
+            }
+            this.formData.message = '';
+            this.getData();
+        } catch (error) {
+          console.log(error);
+        }
       },
       async addFriend(){
         var aemail = this.formData.emailadd;
@@ -144,6 +216,16 @@
         this.getData();
       },
       async getData() {
+        await getChat(db).then((response)=>{
+            var finaltemp=[];
+            response.forEach(element=>{
+              if((element.sender==user.value.uid && element.receiver==this.uidchatwith)||(element.receiver==user.value.uid && element.sender==this.uidchatwith)){
+                finaltemp.push(element);
+              }
+            })
+            const sortedActivities = finaltemp.slice().sort((a, b) => a.date - b.date);
+            this.dataChat=sortedActivities;
+        })
         await getFriend(db).then((response)=>{
           var datafriendtemp = [];
           var finaltemp=[];
@@ -159,7 +241,6 @@
               }
             });
           })
-          // console.log("DATA FRIEND:\n",finaltemp);
           this.dataFriend = finaltemp;
         })
       },

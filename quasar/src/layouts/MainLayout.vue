@@ -1,16 +1,14 @@
 <template>
-  <q-layout view="lHh Lpr lFf">
+  <q-layout view="lHh Lpr lFf" >
     <q-header elevated>
       <q-toolbar>
-        <q-avatar v-if="isAuthenticated" @click="goProfile" icon="account_circle" color="primary"/>
         <q-toolbar-title>
          217116574
         </q-toolbar-title>
-        <div>
-          <q-btn color="negative" v-if="isAuthenticated" @click="logOut">Logout<br>{{user.email}}</q-btn>
-        </div>
+        <q-btn v-if="isAuthenticated" flat @click="logOut" round dense icon="logout" />
       </q-toolbar>
     </q-header>
+
     <q-page-container>
       <router-view />
     </q-page-container>
@@ -19,10 +17,20 @@
 
 <script>
 import { useAuth } from '@vueuse/firebase/useAuth'
-import { getAuth, signOut } from "firebase/auth";
+import { getAuth, signOut ,deleteUser } from "firebase/auth";
 import { app, db, auth } from 'boot/firebase'
 import { doc, updateDoc } from "firebase/firestore";
 import { openURL } from 'quasar'
+import { ref } from 'vue'
+
+const menuList = [
+  {
+    icon: 'inbox',
+    label: 'Inbox',
+    separator: true
+  }
+]
+
 export default ({
   name: 'MainLayout',
 
@@ -37,6 +45,15 @@ export default ({
     }
     const logOut = async() => {
       try {
+        if(user.value.email==null){
+          deleteUser(auth.currentUser).then(() => {
+            // User deleted.
+            console.log("DELETED");
+          }).catch((error) => {
+            // An error ocurred
+            // ...
+          });
+        }
         const washingtonRef = doc(db, "users", user.value.uid);
          updateDoc(washingtonRef, {
             online: false
@@ -58,7 +75,10 @@ export default ({
       }
     }
     return {
-      isAuthenticated, user,logOut,goProfile
+      isAuthenticated, user,logOut,goProfile,
+      drawer: ref(false),
+      menuList
+
     }
   },
 })
