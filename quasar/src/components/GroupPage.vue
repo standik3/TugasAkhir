@@ -34,8 +34,9 @@
           <q-item-section>
             <q-item-label>{{ group.groupname }}</q-item-label>
             <q-item-label>Member : {{ group.memberid.length }} orang</q-item-label>
+            <q-item-label>Code : {{ group.groupcode }}</q-item-label>
           </q-item-section>
-          <q-btn @click="goChat(group.groupcode)">chat</q-btn>
+          <!-- <q-btn @click="goChat(group.groupcode)">chat</q-btn> -->
         </q-item>
       </q-list>
 </q-page>

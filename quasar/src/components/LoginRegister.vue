@@ -62,8 +62,9 @@
       label="ADMIN LOGIN" />
     </div>
   </q-form>
-  <img style="width:50px ;height: 50px;" src="public/icons/Google-PNG-Clipart.png" @click="signInGoogle"/>
-  <img style="width:50px ;height: 50px;  float: right;" src="public/icons/download.jpeg" @click="admin"/>
+  <q-btn style="width:50px ;height: 50px;" @click="signInGoogle" class="full-width primary " v-if="!admincheck"> google</q-btn>
+  <q-btn style="width:50px ;height: 50px;  float: right;" @click="admin" class="absolute-bottom" color="primary"  v-if="!admincheck">admin</q-btn>
+  <q-btn style="width:50px ;height: 50px;  float: right;" @click="admin" color="primary" class="absolute-bottom" v-if="admincheck">user</q-btn>
 </q-page>
 </template>
 <script>
@@ -80,12 +81,12 @@ props : ['tab'],
 data() {
   return {
     formData:{
-      name:'Tester',
-      phone: '123456789012',
-      email:'tester@gmail.com',
-      password:'123456',
-      passwordadmin:'admin',
-      adminid:'admin'
+      name:'',
+      phone: '',
+      email:'',
+      password:'',
+      passwordadmin:'',
+      adminid:''
     },isAuthenticated, user,admincheck: false,adminloggedin: undefined,dataUser:undefined
   }
 },
@@ -203,7 +204,8 @@ methods: {
       }
     }
   },
-  signInGoogle(){
+  async signInGoogle(){
+    var akundbada = false;
     const provider = new GoogleAuthProvider();
     signInWithPopup(auth, provider)
     .then((result) => {
@@ -212,26 +214,48 @@ methods: {
       const token = credential.accessToken;
       const userR = result.user;
       // console.log("DATA USER :",userR);
-      setDoc(doc(db, "users", userR.uid), {
-          displayName: userR.displayName,
-          email: userR.email,
-          emailVerified: userR.emailVerified,
-          password: "",
-          online: true,
-          friendwith: [],
-          group: [],
-          reportedby: [],
-          phoneNumber: userR.phoneNumber,
-          photoURL: userR.photoURL,
-          disabled: false,
-          userUID:userR.uid
-        }).then(() => {
-            console.log("Data Google Sign masuk DB");
-        })
-        .catch((error) => {
-            // The document probably doesn't exist.
-            console.error("Error updating document: ", error);
+      getCities(db).then((response)=>{
+        response.forEach(element => {
+          if(element.email == userR.email){
+            akundbada = true;
+          }
         });
+        if(!akundbada){
+          setDoc(doc(db, "users", userR.uid), {
+            displayName: userR.displayName,
+            email: userR.email,
+            emailVerified: userR.emailVerified,
+            password: "",
+            online: true,
+            friendwith: [],
+            group: [],
+            reportedby: [],
+            phoneNumber: userR.phoneNumber,
+            photoURL: userR.photoURL,
+            disabled: false,
+            userUID:userR.uid
+          }).then(() => {
+              console.log("Data Google Sign masuk DB");
+          })
+          .catch((error) => {
+              // The document probably doesn't exist.
+              console.error("Error updating document: ", error);
+          });
+        }else{
+          const washingtonRef = doc(db, "users", userR.uid);
+            updateDoc(washingtonRef, {
+              online: true
+            }).then(() => {
+                console.log("Document successfully updated!");
+            })
+            .catch((error) => {
+                // The document probably doesn't exist.
+                console.error("Error updating document: ", error);
+            });
+        }
+      }).catch((error)=>{
+        console.log(error);
+      });
       // ...
     }).catch((error) => {
       // Handle Errors here.

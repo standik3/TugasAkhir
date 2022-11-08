@@ -43,6 +43,30 @@
             </tr>
           </table>
         </q-card>
+        <q-btn class="full-width" @click="makeRule">make new rule </q-btn>
+        <q-form @submit="trigerrespon" v-if="newrule">
+          <q-input
+            outlined
+            class="q-mb-md"
+            v-model="formData.trigger"
+            type="text"
+            label="(Trigger kata)"
+          />
+          <q-input
+            outlined
+            class="q-mb-md"
+            v-model="formData.respon"
+            type="text"
+            label="(Respon kata)"
+          />
+        <div class="row">
+          <q-btn
+          class="full-width"
+          color="primary"
+          type="submit"
+          label="Add Rule" />
+        </div>
+        </q-form>
       </div>
   </q-page>
 </template>
@@ -51,19 +75,70 @@
 import { useAuth } from '@vueuse/firebase/useAuth'
 import { useQuasar } from 'quasar'
 import { getAuth } from "firebase/auth";
-import { app, db, auth , getCities,getGroup , getFriend} from 'boot/firebase'
+import { app, db, auth , getCities,getGroup , getRuleBot} from 'boot/firebase'
 import { doc, setDoc, updateDoc } from "firebase/firestore";
 import { collection, query, where, onSnapshot } from "firebase/firestore";
 export default ({
     data() {
       return {
+        formData:{
+          trigger:'',
+          respon: '',
+        },
         dataUser: undefined,
         dataGrup: undefined,
         tabeluser: false,
-        tabelgrup: false
+        tabelgrup: false,
+        newrule: false,
+        dataRule:undefined,
+
       }
     },
     methods: {
+      makeRule(){
+        if(this.newrule){
+          this.newrule = false;
+        }else{
+          this.newrule = true;
+        }
+        this.getData();
+      },
+      trigerrespon(){
+        var newtri = this.formData.trigger;
+        var newres = this.formData.respon;
+        var bisaAddRule = true;
+        if(newtri.trim()&&newres.trim()){
+          var temprule = [];
+          temprule=this.dataRule;
+          temprule.forEach(element=>{
+            element.trigger.forEach(trigerelement=>{
+              if(newtri == trigerelement){
+                bisaAddRule = false;
+              }
+            })
+          })
+          if(bisaAddRule){
+            var totalrule ="rule"+ temprule.length;
+            var temptrig =[];
+            var tempresp =[];
+            temptrig.push(newtri);
+            tempresp.push(newres);
+            setDoc(doc(db, "rules",totalrule), {
+                trigger: temptrig,
+                respon: tempresp
+              }).then(() => {
+                console.log("BERHASIL ADD RULE");
+              })
+              .catch((error) => {
+                console.log(error);
+              });
+          }else{
+            console.log("TIDAK BISA ADD");
+          }
+        }
+        this.formData.trigger='';
+        this.formData.respon='';
+      },
       block(uid){
         const washingtonRef = doc(db, "users", uid);
         updateDoc(washingtonRef, {
@@ -106,6 +181,13 @@ export default ({
         this.getData();
       },
       async getData() {
+        await getRuleBot(db).then((response)=>{
+          var temprule = []
+          response.forEach(element=>{
+            temprule.push(element)
+          })
+          this.dataRule = temprule
+        })
         await getCities(db).then((response)=>{
           var temp= [];
           response.forEach(element => {

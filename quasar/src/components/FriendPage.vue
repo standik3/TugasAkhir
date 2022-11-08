@@ -71,10 +71,12 @@
 </template>
   <script>
   import { useAuth } from '@vueuse/firebase/useAuth'
+  import { ref } from 'vue';
   import { doc, setDoc, updateDoc } from "firebase/firestore";
   import { useQuasar } from 'quasar'
   import { getAuth } from "firebase/auth";
   import { app, db , getFriend,getCities,getChat } from 'boot/firebase'
+  import { collection, query, where, onSnapshot } from "firebase/firestore";
   // import ChatActiveDIV from 'src/components/ChatActive.vue';
   const { user } = useAuth(getAuth(app));
   export default ({
@@ -96,7 +98,7 @@
         dataFriend: this.passingData,
         isChatted:false,dataChat:undefined,
         uidchatwith:undefined,user,
-        userchatwith:undefined
+        userchatwith:undefined,unsubscribe:undefined
       }
     },
     components:{
@@ -254,6 +256,23 @@
         this.getData();
       },
       async getData() {
+        const q = query(collection(db, "chats"));
+        this.unsubscribe = onSnapshot(q, (snapshot) => {
+          snapshot.docChanges().forEach((change) => {
+            if (change.type === "added") {
+              getChat(db).then((response)=>{
+                  var finaltemp=[];
+                  response.forEach(element=>{
+                    if((element.sender==user.value.uid && element.receiver==this.uidchatwith)||(element.receiver==user.value.uid && element.sender==this.uidchatwith)){
+                      finaltemp.push(element);
+                    }
+                  })
+                  const sortedActivities = finaltemp.slice().sort((a, b) => a.date - b.date);
+                  this.dataChat=sortedActivities;
+              })
+            }
+          });
+        });
         await getChat(db).then((response)=>{
             var finaltemp=[];
             response.forEach(element=>{
