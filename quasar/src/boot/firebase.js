@@ -53,6 +53,13 @@ export async function getGroup(db) {
   // console.log("coba coba",cityList);
   return cityList;
 }
+export async function getChatGroup(db) {
+  const citiesCol = collection(db, 'groupchats');
+  const citySnapshot = await getDocs(citiesCol);
+  const cityList = citySnapshot.docs.map(doc => doc.data());
+  // console.log("coba coba",cityList);
+  return cityList;
+}
 export async function getChat(db) {
   const citiesCol = collection(db, 'chats');
   const citySnapshot = await getDocs(citiesCol);

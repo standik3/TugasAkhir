@@ -98,7 +98,7 @@
         dataFriend: this.passingData,
         isChatted:false,dataChat:undefined,
         uidchatwith:undefined,user,
-        userchatwith:undefined,unsubscribe:undefined
+        userchatwith:undefined,unsubscribechat:undefined,unsubscribefriend:undefined
       }
     },
     components:{
@@ -157,6 +157,16 @@
           }).catch((error)=>{
             console.log(error);
           });
+          await getChat(db).then((response)=>{
+            response.forEach(element=>{
+              if(element.receiver==user.value.uid && element.sender==uidchat){
+                let washingtonRef = doc(db, "chats", element.idchat);
+                updateDoc(washingtonRef, {
+                  status: 'R'
+                })
+              }
+            })
+          })
         this.getData();
       },
       sendMessage(){
@@ -167,10 +177,13 @@
             var isipesan = this.formData.message;
             if(isipesan.trim()){
               setDoc(doc(db, "chats", autogenerate), {
+                idchat:autogenerate,
                 pesan:isipesan,
                 date: new Date(),
                 sender:user.value.uid,
-                receiver: this.uidchatwith
+                receiver: this.uidchatwith,
+                status:'D'
+
               }).then(() => {
                 console.log("BERHASIL CHAT");
               })
@@ -257,7 +270,7 @@
       },
       async getData() {
         const q = query(collection(db, "chats"));
-        this.unsubscribe = onSnapshot(q, (snapshot) => {
+        this.unsubscribechat = onSnapshot(q, (snapshot) => {
           snapshot.docChanges().forEach((change) => {
             if (change.type === "added") {
               getChat(db).then((response)=>{
@@ -269,6 +282,30 @@
                   })
                   const sortedActivities = finaltemp.slice().sort((a, b) => a.date - b.date);
                   this.dataChat=sortedActivities;
+              })
+            }
+          });
+        });
+        const qu = query(collection(db, "users"));
+        this.unsubscribefriend = onSnapshot(qu, (snapshot) => {
+          snapshot.docChanges().forEach((change) => {
+            if(change.type === "modified"){
+              getFriend(db).then((response)=>{
+                var datafriendtemp = [];
+                var finaltemp=[];
+                response.forEach(element=>{
+                  if(element.email == user.value.email){
+                    datafriendtemp = element.friendwith;
+                  }
+                })
+                datafriendtemp.forEach(elemen=>{
+                  response.forEach(element => {
+                    if(element.userUID == elemen){
+                      finaltemp.push(element);
+                    }
+                  });
+                })
+                this.dataFriend = finaltemp;
               })
             }
           });

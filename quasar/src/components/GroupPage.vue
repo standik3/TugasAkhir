@@ -1,11 +1,30 @@
 <template>
-  <!-- <Suspense>
-    <template #fallback>
-      Loading
-    </template> -->
-    <!-- <template #default> -->
 <q-page class="full-width">
-  <q-form @submit="addGroup">
+  <q-page v-if="isChatted">
+      <q-btn @click="goBack" label="<- BACK" />
+      CHAT WITH {{namagroup}}
+      <div class="q-pa-md row justify-center">
+        <div style="width: 100%; max-width: 400px">
+          <q-chat-message
+            v-for="chat in dataChat" :key="chat.id"
+              :name="chat.sender === user.uid  ? user.email : chat.senderemail"
+              :text="[chat.pesan]"
+              :sent="chat.sender === user.uid"
+           />
+        </div>
+      </div>
+      <q-footer>
+          <q-form @submit="sendMessage">
+            <q-toolbar class="bg-grey-3 text-black row">
+            <q-btn round flat icon="insert_emoticon" class="q-mr-sm" />
+            <q-input rounded outlined dense class="WAL__field col-grow q-mr-sm" bg-color="white" v-model="formData.message" placeholder="Type a message" />
+            <q-btn round flat icon="send" type="submit"/>
+          </q-toolbar>
+          </q-form>
+        </q-footer>
+    </q-page>
+    <q-page v-else>
+      <q-form @submit="addGroup">
     <q-input
       outlined
       class="q-mb-md"
@@ -36,19 +55,19 @@
             <q-item-label>Member : {{ group.memberid.length }} orang</q-item-label>
             <q-item-label>Code : {{ group.groupcode }}</q-item-label>
           </q-item-section>
-          <!-- <q-btn @click="goChat(group.groupcode)">chat</q-btn> -->
+          <q-btn @click="goChat(group.groupcode)">chat</q-btn>
         </q-item>
       </q-list>
+    </q-page>
 </q-page>
-    <!-- </template>
-  </Suspense> -->
 </template>
   <script>
   import { doc, setDoc, updateDoc } from "firebase/firestore";
   import { useAuth } from '@vueuse/firebase/useAuth'
   import { useQuasar } from 'quasar';
   import { getAuth } from "firebase/auth";
-  import { app, db , getGroup } from 'boot/firebase'
+  import { app, db , getGroup ,getChatGroup} from 'boot/firebase'
+  import { collection, query, where, onSnapshot } from "firebase/firestore";
   const { user } = useAuth(getAuth(app));
   export default ({
     props:[
@@ -65,12 +84,53 @@
           phoneadd:'',
           grupcode:''
         },
-        dataGrup: this.passingData
+        dataGrup: this.passingData,codechatwith:undefined,dataChat:undefined,
+        isChatted:false,namagroup:undefined,user,unsubscribe:undefined,unsubsgrup:undefined
       }
     },
     methods: {
-      goChat(groupcode){
-        console.log("CHAT with Group :",groupcode);
+      goBack(){
+        this.isChatted = false;
+      },
+      sendMessage(){
+        try {
+            var substr1 = Math.floor(Math.random() * (21 - 1 + 1)) + 1;
+            var substr2 = substr1 +  6;
+            var autogenerate = user.value.uid.substring(substr1,substr2);
+            var isipesan = this.formData.message;
+            if(isipesan.trim()){
+              setDoc(doc(db, "groupchats", autogenerate), {
+                pesan:isipesan,
+                date: new Date(),
+                sender:user.value.uid,
+                groupcode: this.codechatwith,
+                senderemail: user.value.email
+              }).then(() => {
+                console.log("BERHASIL CHAT");
+              })
+              .catch((error) => {
+                console.log(error);
+              });
+            }
+            this.formData.message = '';
+            this.getData();
+        } catch (error) {
+          console.log(error);
+        }
+      },
+      async goChat(uidchat){
+        this.isChatted = true;
+        this.codechatwith = uidchat;
+        await getGroup(db).then((response)=>{
+            response.forEach(element => {
+              if(element.groupcode == this.codechatwith){
+                this.namagroup = element.groupname
+              }
+            });
+          }).catch((error)=>{
+            console.log(error);
+          });
+        this.getData();
       },
       async addGroup(){
         var agrup = this.formData.grupcode;
@@ -147,6 +207,56 @@
         this.getData();
       },
       async getData() {
+        const q = query(collection(db, "groupchats"));
+        this.unsubscribe = onSnapshot(q, (snapshot) => {
+          snapshot.docChanges().forEach((change) => {
+            if (change.type === "added") {
+              getChatGroup(db).then((response)=>{
+                  var finaltemp=[];
+                  response.forEach(element=>{
+                    if(element.groupcode==this.codechatwith){
+                      finaltemp.push(element);
+                    }
+                  })
+                  const sortedActivities = finaltemp.slice().sort((a, b) => a.date - b.date);
+                  this.dataChat=sortedActivities;
+              })
+            }
+          });
+        });
+        const qu = query(collection(db, "group"));
+        this.unsubsgrup = onSnapshot(qu, (snapshot) => {
+          snapshot.docChanges().forEach((change) => {
+            if (change.type === "modified") {
+              getGroup(db).then((response)=>{
+                var datamember = [];
+                var datagrupsaya=[];
+                response.forEach(element => {
+                    datamember = element.memberid;
+                    datamember.forEach(elementmember => {
+                      if(elementmember == user.value.uid){
+                        datagrupsaya.push(element);
+                      }
+                    });
+                });
+                this.dataGrup = datagrupsaya
+                // console.log("data grup:\n",this.dataGrup);
+              }).catch((error)=>{
+                console.log(error);
+              })
+            }
+          });
+        });
+        await getChatGroup(db).then((response)=>{
+            var finaltemp=[];
+            response.forEach(element=>{
+              if(element.groupcode==this.codechatwith){
+                finaltemp.push(element);
+              }
+            })
+            const sortedActivities = finaltemp.slice().sort((a, b) => a.date - b.date);
+            this.dataChat=sortedActivities;
+        })
         await getGroup(db).then((response)=>{
           var datamember = [];
           var datagrupsaya=[];
